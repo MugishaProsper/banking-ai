@@ -1,0 +1,105 @@
+"""
+Health check endpoints for monitoring and readiness probes.
+"""
+from fastapi import APIRouter, Request, HTTPException, status
+from fastapi.responses import JSONResponse
+from datetime import datetime
+import logging
+
+from src.config.settings import get_settings
+from src.database.connection import db_manager
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+router = APIRouter()
+
+
+@router.get("/health")
+async def health_check():
+    """Basic health check endpoint."""
+    return {
+        "status": "healthy",
+        "service": settings.service_name,
+        "version": settings.service_version,
+        "timestamp": datetime.utcnow().isoformat(),
+        "environment": settings.environment
+    }
+
+
+@router.get("/health/db")
+async def database_health_check():
+    """Database connectivity health check."""
+    try:
+        is_healthy = await db_manager.health_check()
+        if is_healthy:
+            return {
+                "status": "healthy",
+                "database": "connected",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database connection failed"
+            )
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database health check failed: {str(e)}"
+        )
+
+
+@router.get("/health/ready")
+async def readiness_check():
+    """Readiness probe for Kubernetes."""
+    try:
+        # Check database connectivity
+        db_healthy = await db_manager.health_check()
+        
+        if not db_healthy:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Service not ready - database unavailable"
+            )
+        
+        return {
+            "status": "ready",
+            "service": settings.service_name,
+            "timestamp": datetime.utcnow().isoformat(),
+            "checks": {
+                "database": "ok",
+                "configuration": "ok"
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Readiness check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service not ready: {str(e)}"
+        )
+
+
+@router.get("/health/live")
+async def liveness_check():
+    """Liveness probe for Kubernetes."""
+    return {
+        "status": "alive",
+        "service": settings.service_name,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@router.get("/metrics")
+async def metrics_endpoint():
+    """Basic metrics endpoint (placeholder for Prometheus)."""
+    return {
+        "service": settings.service_name,
+        "version": settings.service_version,
+        "uptime": "placeholder",  # TODO: Implement actual uptime calculation
+        "requests_total": "placeholder",  # TODO: Implement request counter
+        "timestamp": datetime.utcnow().isoformat()
+    }
