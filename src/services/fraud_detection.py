@@ -18,6 +18,7 @@ from src.config.settings import get_settings
 from src.database.models import Transaction, FraudScore
 from src.database.repositories import transaction_repo, fraud_score_repo
 from src.utils.logger import get_logger
+from src.feature_store.feast_client import feature_store_client
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -192,6 +193,41 @@ class FraudDetectionService:
                 for i, feature_name in enumerate(self.feature_names):
                     if feature_name in precomputed:
                         features[i] = precomputed[feature_name]
+
+            # Enrich features from Feature Store (Feast)
+            try:
+                entity_rows = [{
+                    "account_id": transaction_data.get("sender_account"),
+                    "receiver_account_id": transaction_data.get("receiver_account"),
+                }]
+                feast_features = await feature_store_client.get_online_features(
+                    entity_rows=entity_rows,
+                    feature_refs=[
+                        "txn_features:transaction_frequency_24h",
+                        "txn_features:transaction_frequency_7d",
+                        "txn_features:avg_transaction_amount_30d",
+                        "risk_features:device_risk_score",
+                        "risk_features:location_risk_score",
+                        "risk_features:merchant_risk_score",
+                        "cust_features:account_age_days",
+                    ]
+                )
+                # Map Feast features into our feature vector
+                feast_map = {
+                    "transaction_frequency_24h": 3,
+                    "transaction_frequency_7d": 4,
+                    "avg_transaction_amount_30d": 5,
+                    "device_risk_score": 6,
+                    "location_risk_score": 7,
+                    "merchant_risk_score": 8,
+                    "account_age_days": 9,
+                }
+                for k, idx in feast_map.items():
+                    val = feast_features.get(k)
+                    if val is not None:
+                        features[idx] = float(val)
+            except Exception as e:
+                logger.warning(f"Feast enrichment failed: {e}")
             
             return features.reshape(1, -1)
             

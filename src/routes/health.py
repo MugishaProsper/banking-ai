@@ -8,6 +8,7 @@ import logging
 
 from src.config.settings import get_settings
 from src.database.connection import db_manager
+from src.feature_store.feast_client import feature_store_client
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -57,11 +58,13 @@ async def readiness_check():
     try:
         # Check database connectivity
         db_healthy = await db_manager.health_check()
+        # Check feature store connectivity
+        fs_healthy = await feature_store_client.health_check()
         
-        if not db_healthy:
+        if not db_healthy or not fs_healthy:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Service not ready - database unavailable"
+                detail="Service not ready - dependency unavailable"
             )
         
         return {
@@ -69,7 +72,8 @@ async def readiness_check():
             "service": settings.service_name,
             "timestamp": datetime.utcnow().isoformat(),
             "checks": {
-                "database": "ok",
+                "database": "ok" if db_healthy else "unavailable",
+                "feature_store": "ok" if fs_healthy else "unavailable",
                 "configuration": "ok"
             }
         }

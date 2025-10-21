@@ -45,8 +45,13 @@ class Settings(BaseSettings):
     enable_metrics: bool = Field(default=True, env="ENABLE_METRICS")
     metrics_port: int = Field(default=9090, env="METRICS_PORT")
     
-    # Feature Store Configuration
-    feature_store_url: str = Field(default="http://localhost:6566", env="FEATURE_STORE_URL")
+    # Feature Store Configuration (Feast)
+    feature_store_repo_path: str = Field(default="./feature_repo", env="FEAST_REPO_PATH")
+    feature_store_provider: str = Field(default="local", env="FEAST_PROVIDER")
+    feature_store_registry: str = Field(default="./feature_repo/registry.db", env="FEAST_REGISTRY")
+    feature_store_project: str = Field(default="fraud_ai", env="FEAST_PROJECT")
+    feature_store_online_host: str = Field(default="localhost", env="FEAST_ONLINE_HOST")
+    feature_store_online_port: int = Field(default=6379, env="FEAST_ONLINE_PORT")
     feature_store_timeout: int = Field(default=10, env="FEATURE_STORE_TIMEOUT")
     
     # Kafka Configuration

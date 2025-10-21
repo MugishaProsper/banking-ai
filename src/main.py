@@ -15,6 +15,7 @@ from src.middleware.auth_middleware import APIKeyAuthMiddleware
 from src.routes.health import router as health_router
 from src.routes.fraud import router as fraud_router
 from src.services.fraud_detection import fraud_service
+from src.feature_store.feast_client import feature_store_client
 from src.utils.logger import setup_logging, get_logger
 
 # Setup logging
@@ -34,6 +35,10 @@ async def lifespan(app: FastAPI):
         await db_manager.connect()
         logger.info("Database connected successfully")
         
+        # Initialize feature store
+        await feature_store_client.initialize()
+        logger.info("Feature Store client initialized")
+
         # Initialize fraud detection service
         await fraud_service.initialize()
         logger.info("Fraud detection service initialized")
