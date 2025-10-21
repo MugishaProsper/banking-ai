@@ -3,7 +3,7 @@ Fraud Detection API Routes - Core ML scoring endpoints.
 """
 from fastapi import APIRouter, Request, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import logging
@@ -33,7 +33,7 @@ class TransactionScoreRequest(BaseModel):
     reference: Optional[str] = Field(default=None, description="Transaction reference")
     features: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Precomputed features")
     
-    @validator('timestamp')
+    @field_validator('timestamp')
     def validate_timestamp(cls, v):
         try:
             datetime.fromisoformat(v.replace('Z', '+00:00'))
@@ -41,8 +41,8 @@ class TransactionScoreRequest(BaseModel):
         except ValueError:
             raise ValueError('Invalid timestamp format. Use ISO format.')
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "transaction_id": "txn_1234567890",
                 "timestamp": "2024-01-15T14:30:00Z",
@@ -59,6 +59,7 @@ class TransactionScoreRequest(BaseModel):
                 }
             }
         }
+    }
 
 
 class TransactionScoreResponse(BaseModel):
@@ -67,13 +68,13 @@ class TransactionScoreResponse(BaseModel):
     transaction_id: str
     model_version: str
     probability: float = Field(..., ge=0, le=1)
-    decision: str = Field(..., regex="^(ALLOW|HOLD|BLOCK)$")
+    decision: str = Field(..., pattern="^(ALLOW|HOLD|BLOCK)$")
     explanation: Dict[str, Any]
     latency_ms: int
     timestamp: str
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "transaction_id": "txn_1234567890",
                 "model_version": "tabular_v2024-01-15",
@@ -91,6 +92,7 @@ class TransactionScoreResponse(BaseModel):
                 "timestamp": "2024-01-15T14:30:00Z"
             }
         }
+    }
 
 
 class FeedbackRequest(BaseModel):
