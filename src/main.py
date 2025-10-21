@@ -18,12 +18,16 @@ from src.routes.graph import router as graph_router
 from src.routes.aml import router as aml_router
 from src.routes.credit import router as credit_router
 from src.routes.models import router as models_router
+from src.routes.monitoring import router as monitoring_router
 from src.services.fraud_detection import fraud_service
 from src.services.gnn_fraud import gnn_service
 from src.services.aml import aml_service
 from src.services.credit_scoring import credit_service
 from src.services.retraining_pipeline import retraining_pipeline
 from src.services.deployment_service import deployment_service
+from src.services.metrics_service import metrics_service
+from src.services.alerting_service import alerting_service
+from src.services.tracing_service import tracing_service
 from src.services.kafka_service import kafka_producer, kafka_consumer
 from src.feature_store.feast_client import feature_store_client
 from src.utils.logger import setup_logging, get_logger
@@ -68,6 +72,16 @@ async def lifespan(app: FastAPI):
         # Initialize Model Deployment Service
         await deployment_service.initialize()
         logger.info("Model Deployment Service initialized")
+
+        # Initialize Monitoring Services
+        await metrics_service.initialize()
+        logger.info("Prometheus Metrics Service initialized")
+
+        await alerting_service.initialize()
+        logger.info("Alerting Service initialized")
+
+        await tracing_service.initialize()
+        logger.info("Distributed Tracing Service initialized")
 
         # Initialize Kafka services
         await kafka_producer.initialize()
@@ -127,6 +141,7 @@ app.include_router(graph_router, tags=["Graph Analysis"])
 app.include_router(aml_router, tags=["AML Analysis"])
 app.include_router(credit_router, tags=["Credit Scoring"])
 app.include_router(models_router, tags=["Model Management"])
+app.include_router(monitoring_router, tags=["Monitoring"])
 
 
 @app.exception_handler(Exception)
