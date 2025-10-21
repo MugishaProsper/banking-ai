@@ -381,8 +381,8 @@ async def get_alert_statistics(req: Request):
 
 @router.get("/traces")
 async def get_traces(
-    limit: int = 100,
-    req: Request
+    req: Request,
+    limit: int = 100
 ):
     """
     Get recent traces.
@@ -558,8 +558,8 @@ async def get_monitoring_health(req: Request):
 
 @router.post("/traces/cleanup")
 async def cleanup_traces(
-    max_age_hours: int = 24,
-    req: Request
+    req: Request,
+    max_age_hours: int = 24
 ):
     """
     Clean up old traces.
