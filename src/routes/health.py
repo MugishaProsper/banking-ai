@@ -12,6 +12,8 @@ from src.feature_store.feast_client import feature_store_client
 from src.services.gnn_fraud import gnn_service
 from src.services.aml import aml_service
 from src.services.credit_scoring import credit_service
+from src.services.retraining_pipeline import retraining_pipeline
+from src.services.deployment_service import deployment_service
 from src.services.kafka_service import kafka_producer
 
 logger = logging.getLogger(__name__)
@@ -70,10 +72,14 @@ async def readiness_check():
         aml_healthy = aml_service.is_initialized
         # Check Credit service health
         credit_healthy = credit_service.is_initialized
+        # Check Retraining Pipeline health
+        retraining_healthy = retraining_pipeline.is_initialized
+        # Check Deployment Service health
+        deployment_healthy = deployment_service.is_initialized
         # Check Kafka producer health
         kafka_healthy = kafka_producer.is_connected
         
-        if not all([db_healthy, fs_healthy, gnn_healthy, aml_healthy, credit_healthy, kafka_healthy]):
+        if not all([db_healthy, fs_healthy, gnn_healthy, aml_healthy, credit_healthy, retraining_healthy, deployment_healthy, kafka_healthy]):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Service not ready - dependency unavailable"
@@ -89,6 +95,8 @@ async def readiness_check():
                 "gnn_service": "ok" if gnn_healthy else "unavailable",
                 "aml_service": "ok" if aml_healthy else "unavailable",
                 "credit_service": "ok" if credit_healthy else "unavailable",
+                "retraining_pipeline": "ok" if retraining_healthy else "unavailable",
+                "deployment_service": "ok" if deployment_healthy else "unavailable",
                 "kafka_producer": "ok" if kafka_healthy else "unavailable",
                 "configuration": "ok"
             }
