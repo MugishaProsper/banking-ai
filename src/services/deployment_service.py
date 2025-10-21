@@ -166,6 +166,8 @@ class ModelDeploymentService:
                             else:
                                 # Rollback
                                 await self._rollback_deployment(deployment)
+        except Exception as e:
+            logger.error(f"Error monitoring canary deployments: {e}")
     
     async def _monitor_ab_tests(self) -> None:
         """Monitor A/B tests and determine winners."""
@@ -179,6 +181,8 @@ class ModelDeploymentService:
                         if duration_hours >= 48:  # 48-hour test duration
                             # Evaluate test results
                             await self._evaluate_ab_test(test)
+        except Exception as e:
+            logger.error(f"Error monitoring A/B tests: {e}")
     
     async def _check_deployment_performance(self, deployment: Deployment) -> bool:
         """Check if deployment is performing well."""

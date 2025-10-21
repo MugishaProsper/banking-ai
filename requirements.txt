@@ -54,3 +54,5 @@ feast>=0.34.0
 
 # Kafka
 aiokafka>=0.8.0
+
+structlog>=23.2.0

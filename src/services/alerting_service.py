@@ -12,8 +12,8 @@ import json
 import smtplib
 import requests
 import time
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from src.config.settings import get_settings
 from src.utils.logger import get_logger
@@ -396,7 +396,7 @@ class AlertingService:
             if not config["to_emails"]:
                 return
             
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = config["from_email"]
             msg['To'] = ", ".join(config["to_emails"])
             msg['Subject'] = f"[{alert.severity.value.upper()}] {rule.name}"
@@ -413,7 +413,7 @@ class AlertingService:
             Rule: {rule.description}
             """
             
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))
             
             # Send email
             server = smtplib.SMTP(config["smtp_server"], config["smtp_port"])

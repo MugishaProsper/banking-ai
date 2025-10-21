@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.trace import Status, StatusCode
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+# from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 
@@ -135,8 +135,8 @@ class DistributedTracingService:
             # FastAPI instrumentation
             FastAPIInstrumentor.instrument_app = self._instrument_fastapi
             
-            # HTTP client instrumentation
-            HTTPXClientInstrumentor().instrument()
+            # HTTP client instrumentation (commented out due to compatibility issues)
+            # HTTPXClientInstrumentor().instrument()
             
             # Database instrumentations
             PymongoInstrumentor().instrument()
