@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     mongo_min_pool_size: int = Field(default=1, env="MONGO_MIN_POOL_SIZE")
     
     # Backend Service Configuration
-    backend_url: str = Field(default="http://localhost:3000", env="BACKEND_URL")
+    backend_url: str = Field(default="http://localhost:5000", env="BACKEND_URL")
     backend_timeout: int = Field(default=30, env="BACKEND_TIMEOUT")
     
     # Service Configuration
-    service_name: str = Field(default="ai-banking-microservice", env="SERVICE_NAME")
+    service_name: str = Field(default="fraud-ai-microservice", env="SERVICE_NAME")
     service_version: str = Field(default="1.0.0", env="SERVICE_VERSION")
     service_host: str = Field(default="0.0.0.0", env="SERVICE_HOST")
     service_port: int = Field(default=8000, env="SERVICE_PORT")

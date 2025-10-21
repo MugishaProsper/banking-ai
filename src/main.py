@@ -13,6 +13,8 @@ from src.config.settings import get_settings
 from src.database.connection import db_manager
 from src.middleware.auth_middleware import APIKeyAuthMiddleware
 from src.routes.health import router as health_router
+from src.routes.fraud import router as fraud_router
+from src.services.fraud_detection import fraud_service
 from src.utils.logger import setup_logging, get_logger
 
 # Setup logging
@@ -31,8 +33,13 @@ async def lifespan(app: FastAPI):
     try:
         await db_manager.connect()
         logger.info("Database connected successfully")
+        
+        # Initialize fraud detection service
+        await fraud_service.initialize()
+        logger.info("Fraud detection service initialized")
+        
     except Exception as e:
-        logger.error(f"Failed to connect to database: {e}")
+        logger.error(f"Failed to initialize services: {e}")
         raise
     
     yield
@@ -67,6 +74,7 @@ app.add_middleware(APIKeyAuthMiddleware)
 
 # Include routers
 app.include_router(health_router, tags=["Health"])
+app.include_router(fraud_router, tags=["Fraud Detection"])
 
 
 @app.exception_handler(Exception)
