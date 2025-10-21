@@ -274,8 +274,8 @@ async def start_ab_test(
 
 @router.get("/versions")
 async def get_model_versions(
-    model_type: Optional[str] = None,
-    req: Request
+    req: Request,
+    model_type: Optional[str] = None
 ):
     """
     Get model versions information.
