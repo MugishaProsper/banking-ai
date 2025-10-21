@@ -15,8 +15,12 @@ from src.middleware.auth_middleware import APIKeyAuthMiddleware
 from src.routes.health import router as health_router
 from src.routes.fraud import router as fraud_router
 from src.routes.graph import router as graph_router
+from src.routes.aml import router as aml_router
+from src.routes.credit import router as credit_router
 from src.services.fraud_detection import fraud_service
 from src.services.gnn_fraud import gnn_service
+from src.services.aml import aml_service
+from src.services.credit_scoring import credit_service
 from src.services.kafka_service import kafka_producer, kafka_consumer
 from src.feature_store.feast_client import feature_store_client
 from src.utils.logger import setup_logging, get_logger
@@ -45,6 +49,14 @@ async def lifespan(app: FastAPI):
         # Initialize GNN service
         await gnn_service.initialize()
         logger.info("GNN Fraud Service initialized")
+
+        # Initialize AML service
+        await aml_service.initialize()
+        logger.info("AML Detection Service initialized")
+
+        # Initialize Credit Scoring service
+        await credit_service.initialize()
+        logger.info("Credit Scoring Service initialized")
 
         # Initialize Kafka services
         await kafka_producer.initialize()
@@ -101,6 +113,8 @@ app.add_middleware(APIKeyAuthMiddleware)
 app.include_router(health_router, tags=["Health"])
 app.include_router(fraud_router, tags=["Fraud Detection"])
 app.include_router(graph_router, tags=["Graph Analysis"])
+app.include_router(aml_router, tags=["AML Analysis"])
+app.include_router(credit_router, tags=["Credit Scoring"])
 
 
 @app.exception_handler(Exception)

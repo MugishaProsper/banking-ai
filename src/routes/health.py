@@ -10,6 +10,8 @@ from src.config.settings import get_settings
 from src.database.connection import db_manager
 from src.feature_store.feast_client import feature_store_client
 from src.services.gnn_fraud import gnn_service
+from src.services.aml import aml_service
+from src.services.credit_scoring import credit_service
 from src.services.kafka_service import kafka_producer
 
 logger = logging.getLogger(__name__)
@@ -64,10 +66,14 @@ async def readiness_check():
         fs_healthy = await feature_store_client.health_check()
         # Check GNN service health
         gnn_healthy = gnn_service.is_initialized
+        # Check AML service health
+        aml_healthy = aml_service.is_initialized
+        # Check Credit service health
+        credit_healthy = credit_service.is_initialized
         # Check Kafka producer health
         kafka_healthy = kafka_producer.is_connected
         
-        if not db_healthy or not fs_healthy or not gnn_healthy or not kafka_healthy:
+        if not all([db_healthy, fs_healthy, gnn_healthy, aml_healthy, credit_healthy, kafka_healthy]):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Service not ready - dependency unavailable"
@@ -81,6 +87,8 @@ async def readiness_check():
                 "database": "ok" if db_healthy else "unavailable",
                 "feature_store": "ok" if fs_healthy else "unavailable",
                 "gnn_service": "ok" if gnn_healthy else "unavailable",
+                "aml_service": "ok" if aml_healthy else "unavailable",
+                "credit_service": "ok" if credit_healthy else "unavailable",
                 "kafka_producer": "ok" if kafka_healthy else "unavailable",
                 "configuration": "ok"
             }
