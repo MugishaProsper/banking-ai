@@ -4,7 +4,7 @@ Distributed tracing service with OpenTelemetry integration.
 import asyncio
 import time
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass
 from enum import Enum

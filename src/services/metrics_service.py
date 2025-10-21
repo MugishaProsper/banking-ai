@@ -52,6 +52,7 @@ class PrometheusMetricsService:
     def __init__(self):
         self.is_initialized = False
         self.registry = CollectorRegistry()
+        self._start_time = time.time()
         
         # Standard metrics
         self._init_standard_metrics()

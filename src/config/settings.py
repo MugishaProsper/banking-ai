@@ -2,7 +2,8 @@
 Configuration management for AI Banking Microservice.
 """
 from typing import List, Optional
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 import os
 
 
@@ -45,19 +46,47 @@ class Settings(BaseSettings):
     enable_metrics: bool = Field(default=True, env="ENABLE_METRICS")
     metrics_port: int = Field(default=9090, env="METRICS_PORT")
     
+    # Alerting Configuration
+    email_smtp_server: str = Field(default="smtp.gmail.com", env="EMAIL_SMTP_SERVER")
+    email_smtp_port: int = Field(default=587, env="EMAIL_SMTP_PORT")
+    email_username: str = Field(default="", env="EMAIL_USERNAME")
+    email_password: str = Field(default="", env="EMAIL_PASSWORD")
+    email_from: str = Field(default="", env="EMAIL_FROM")
+    email_to_emails: str = Field(default="", env="EMAIL_TO_EMAILS")
+    
+    slack_webhook_url: str = Field(default="", env="SLACK_WEBHOOK_URL")
+    slack_channel: str = Field(default="#alerts", env="SLACK_CHANNEL")
+    slack_username: str = Field(default="AI Banking Bot", env="SLACK_USERNAME")
+    
+    webhook_url: str = Field(default="", env="WEBHOOK_URL")
+    webhook_headers: str = Field(default="{}", env="WEBHOOK_HEADERS")
+    
+    pagerduty_integration_key: str = Field(default="", env="PAGERDUTY_INTEGRATION_KEY")
+    
+    # Tracing Configuration
+    jaeger_endpoint: str = Field(default="", env="JAEGER_ENDPOINT")
+    jaeger_agent_host: str = Field(default="localhost", env="JAEGER_AGENT_HOST")
+    jaeger_agent_port: int = Field(default=14268, env="JAEGER_AGENT_PORT")
+    tracing_sampling_rate: float = Field(default=0.1, env="TRACING_SAMPLING_RATE")
+    
     # Feature Store Configuration (Feast)
-    feature_store_repo_path: str = Field(default="./feature_repo", env="FEAST_REPO_PATH")
-    feature_store_provider: str = Field(default="local", env="FEAST_PROVIDER")
-    feature_store_registry: str = Field(default="./feature_repo/registry.db", env="FEAST_REGISTRY")
-    feature_store_project: str = Field(default="fraud_ai", env="FEAST_PROJECT")
-    feature_store_online_host: str = Field(default="localhost", env="FEAST_ONLINE_HOST")
-    feature_store_online_port: int = Field(default=6379, env="FEAST_ONLINE_PORT")
+    feast_repo_path: str = Field(default="./feature_repo", env="FEAST_REPO_PATH")
+    feast_provider: str = Field(default="local", env="FEAST_PROVIDER")
+    feast_registry: str = Field(default="./feature_repo/registry.db", env="FEAST_REGISTRY")
+    feast_project: str = Field(default="fraud_ai", env="FEAST_PROJECT")
+    feast_online_host: str = Field(default="localhost", env="FEAST_ONLINE_HOST")
+    feast_online_port: int = Field(default=6379, env="FEAST_ONLINE_PORT")
     feature_store_timeout: int = Field(default=10, env="FEATURE_STORE_TIMEOUT")
     
     # Kafka Configuration
     kafka_bootstrap_servers: str = Field(default="localhost:9092", env="KAFKA_BOOTSTRAP_SERVERS")
     kafka_group_id: str = Field(default="ai-banking-service", env="KAFKA_GROUP_ID")
     kafka_auto_offset_reset: str = Field(default="earliest", env="KAFKA_AUTO_OFFSET_RESET")
+    kafka_txn_topic: str = Field(default="transactions", env="KAFKA_TXN_TOPIC")
+    kafka_fraud_score_topic: str = Field(default="fraud_scores", env="KAFKA_FRAUD_SCORE_TOPIC")
+    kafka_fraud_alert_topic: str = Field(default="fraud_alerts", env="KAFKA_FRAUD_ALERT_TOPIC")
+    kafka_fraud_feedback_topic: str = Field(default="fraud_feedback", env="KAFKA_FRAUD_FEEDBACK_TOPIC")
+    kafka_model_metrics_topic: str = Field(default="model_metrics", env="KAFKA_MODEL_METRICS_TOPIC")
     
     # Model Configuration
     model_cache_ttl: int = Field(default=3600, env="MODEL_CACHE_TTL")
@@ -72,10 +101,12 @@ class Settings(BaseSettings):
     cors_allow_methods: List[str] = Field(default=["*"], env="CORS_ALLOW_METHODS")
     cors_allow_headers: List[str] = Field(default=["*"], env="CORS_ALLOW_HEADERS")
     
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "protected_namespaces": ("settings_",)
+    }
 
 
 # Global settings instance
