@@ -9,6 +9,8 @@ import logging
 from src.config.settings import get_settings
 from src.database.connection import db_manager
 from src.feature_store.feast_client import feature_store_client
+from src.services.gnn_fraud import gnn_service
+from src.services.kafka_service import kafka_producer
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -60,8 +62,12 @@ async def readiness_check():
         db_healthy = await db_manager.health_check()
         # Check feature store connectivity
         fs_healthy = await feature_store_client.health_check()
+        # Check GNN service health
+        gnn_healthy = gnn_service.is_initialized
+        # Check Kafka producer health
+        kafka_healthy = kafka_producer.is_connected
         
-        if not db_healthy or not fs_healthy:
+        if not db_healthy or not fs_healthy or not gnn_healthy or not kafka_healthy:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Service not ready - dependency unavailable"
@@ -74,6 +80,8 @@ async def readiness_check():
             "checks": {
                 "database": "ok" if db_healthy else "unavailable",
                 "feature_store": "ok" if fs_healthy else "unavailable",
+                "gnn_service": "ok" if gnn_healthy else "unavailable",
+                "kafka_producer": "ok" if kafka_healthy else "unavailable",
                 "configuration": "ok"
             }
         }

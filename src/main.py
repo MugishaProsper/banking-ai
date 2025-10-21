@@ -14,7 +14,10 @@ from src.database.connection import db_manager
 from src.middleware.auth_middleware import APIKeyAuthMiddleware
 from src.routes.health import router as health_router
 from src.routes.fraud import router as fraud_router
+from src.routes.graph import router as graph_router
 from src.services.fraud_detection import fraud_service
+from src.services.gnn_fraud import gnn_service
+from src.services.kafka_service import kafka_producer, kafka_consumer
 from src.feature_store.feast_client import feature_store_client
 from src.utils.logger import setup_logging, get_logger
 
@@ -39,6 +42,19 @@ async def lifespan(app: FastAPI):
         await feature_store_client.initialize()
         logger.info("Feature Store client initialized")
 
+        # Initialize GNN service
+        await gnn_service.initialize()
+        logger.info("GNN Fraud Service initialized")
+
+        # Initialize Kafka services
+        await kafka_producer.initialize()
+        logger.info("Kafka producer initialized")
+        
+        # Start Kafka consumer in background
+        asyncio.create_task(kafka_consumer.initialize())
+        asyncio.create_task(kafka_consumer.start_consuming())
+        logger.info("Kafka consumer started")
+
         # Initialize fraud detection service
         await fraud_service.initialize()
         logger.info("Fraud detection service initialized")
@@ -51,8 +67,12 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down AI Banking Microservice")
+    
+    # Shutdown services
+    await kafka_consumer.shutdown()
+    await kafka_producer.shutdown()
     await db_manager.disconnect()
-    logger.info("Database disconnected")
+    logger.info("All services shutdown successfully")
 
 
 # Create FastAPI application
@@ -80,6 +100,7 @@ app.add_middleware(APIKeyAuthMiddleware)
 # Include routers
 app.include_router(health_router, tags=["Health"])
 app.include_router(fraud_router, tags=["Fraud Detection"])
+app.include_router(graph_router, tags=["Graph Analysis"])
 
 
 @app.exception_handler(Exception)

@@ -19,6 +19,7 @@ from src.database.models import Transaction, FraudScore
 from src.database.repositories import transaction_repo, fraud_score_repo
 from src.utils.logger import get_logger
 from src.feature_store.feast_client import feature_store_client
+from src.services.gnn_fraud import gnn_service
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -134,14 +135,18 @@ class FraudDetectionService:
             tabular_score = await self._get_tabular_score(features)
             anomaly_score = await self._get_anomaly_score(features)
             
+            # Get GNN graph-based analysis
+            gnn_analysis = await gnn_service.analyze_transaction(transaction_data)
+            graph_score = gnn_analysis.get("graph_risk_score", 0.5)
+            
             # Ensemble scoring
-            ensemble_score = await self._ensemble_score(tabular_score, anomaly_score)
+            ensemble_score = await self._ensemble_score(tabular_score, anomaly_score, graph_score)
             
             # Make decision
             decision = await self._make_decision(ensemble_score)
             
-            # Generate explanation
-            explanation = await self._generate_explanation(features, ensemble_score)
+            # Generate explanation with GNN evidence
+            explanation = await self._generate_explanation(features, ensemble_score, gnn_analysis)
             
             # Calculate latency
             latency_ms = int((time.time() - start_time) * 1000)
@@ -268,14 +273,15 @@ class FraudDetectionService:
             logger.error(f"Error getting anomaly score: {e}")
             return 0.5
     
-    async def _ensemble_score(self, tabular_score: float, anomaly_score: float) -> float:
+    async def _ensemble_score(self, tabular_score: float, anomaly_score: float, graph_score: float) -> float:
         """Combine scores from different models."""
-        # Simple weighted average (in production, this would be more sophisticated)
-        weights = {"tabular": 0.7, "anomaly": 0.3}
+        # Weighted average with GNN integration
+        weights = {"tabular": 0.5, "anomaly": 0.2, "graph": 0.3}
         
         ensemble_score = (
             weights["tabular"] * tabular_score +
-            weights["anomaly"] * anomaly_score
+            weights["anomaly"] * anomaly_score +
+            weights["graph"] * graph_score
         )
         
         return min(max(ensemble_score, 0.0), 1.0)  # Clamp to [0, 1]
@@ -289,7 +295,7 @@ class FraudDetectionService:
         else:
             return "ALLOW"
     
-    async def _generate_explanation(self, features: np.ndarray, score: float) -> Dict[str, Any]:
+    async def _generate_explanation(self, features: np.ndarray, score: float, gnn_analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Generate explanation for the fraud score."""
         try:
             # Feature importance (simplified - in production would use SHAP)
@@ -308,10 +314,13 @@ class FraudDetectionService:
             # Sort by importance
             top_features.sort(key=lambda x: x["impact"], reverse=True)
             
+            # Include GNN graph evidence
+            graph_evidence = gnn_analysis.get("graph_evidence", [])
+            
             explanation = {
                 "top_features": top_features[:5],  # Top 5 features
-                "graph_evidence": None,  # Would be populated by GNN model
-                "summary": f"Transaction scored {score:.3f} based on {len(self.feature_names)} features"
+                "graph_evidence": graph_evidence,
+                "summary": f"Transaction scored {score:.3f} based on {len(self.feature_names)} features and graph analysis"
             }
             
             return explanation
